@@ -1,0 +1,6 @@
+{
+  "name": "InfiniteReel Storyboard Studio",
+  "description": "Seamless drag-and-drop cinematic timeline and prompt composer with presets LUT styling.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
