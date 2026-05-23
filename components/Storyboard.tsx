@@ -14,6 +14,10 @@ interface SceneClip {
   imageSeed: string;
   isGenerating?: boolean;
   progress?: number;
+  shotType?: string;
+  cameraAction?: string;
+  actionNotes?: string;
+  dialogueLine?: string;
 }
 
 interface StoryboardProps {
@@ -165,12 +169,27 @@ export default function Storyboard({
 
                   {/* Body textual directions */}
                   <div className="p-2.5 border-t border-neutral-800 flex-1 flex flex-col justify-between">
-                    <p className="font-sans text-[10px] text-neutral-400 line-clamp-2 italic h-[2.5rem]">
-                      &ldquo;{clip.prompt}&rdquo;
-                    </p>
+                    <div>
+                      <p className="font-sans text-[10px] text-neutral-400 line-clamp-2 italic h-[2.5rem] mb-1.5">
+                        &ldquo;{clip.prompt}&rdquo;
+                      </p>
+                      {/* Interactive meta indicators */}
+                      <div className="flex flex-wrap gap-1 mb-2">
+                        {clip.shotType && (
+                          <span className="text-[8px] font-mono px-1 py-0.5 bg-neutral-950 border border-neutral-850 rounded text-neutral-400">
+                            {clip.shotType.split(' ').slice(0, 2).join(' ')}
+                          </span>
+                        )}
+                        {clip.dialogueLine && (
+                          <span className="text-[8px] font-mono px-1 py-0.5 bg-amber-950/20 border border-amber-900/20 rounded text-amber-500" title={clip.dialogueLine}>
+                            💬 VOICE
+                          </span>
+                        )}
+                      </div>
+                    </div>
 
                     {/* Status node */}
-                    <div className="flex items-center justify-between pt-2 mt-2 border-t border-neutral-800/60 w-full">
+                    <div className="flex items-center justify-between pt-2 mt-auto border-t border-neutral-800/60 w-full">
                       <div className="flex items-center gap-1">
                         {clip.isGenerating ? (
                           <>
@@ -190,7 +209,7 @@ export default function Storyboard({
                           e.stopPropagation();
                           onDeleteClip(clip.id);
                         }}
-                        className="text-neutral-500 hover:text-red-400 p-1 rounded hover:bg-neutral-800 transition"
+                        className="text-neutral-500 hover:text-red-400 p-1 rounded hover:bg-neutral-800 transition cursor-pointer"
                         title="Delete Scene Clip"
                       >
                         <Trash2 className="w-3 h-3 animate-none" />

@@ -17,6 +17,10 @@ export interface SceneClip {
   imageSeed: string;
   isGenerating?: boolean;
   progress?: number;
+  shotType?: string;
+  cameraAction?: string;
+  actionNotes?: string;
+  dialogueLine?: string;
 }
 
 const DEFAULT_CLIPS: SceneClip[] = [
@@ -29,16 +33,24 @@ const DEFAULT_CLIPS: SceneClip[] = [
     imageSeed: 'cyber',
     isGenerating: false,
     progress: 100,
+    shotType: 'Extreme Wide Shot [EWS]',
+    cameraAction: 'Dolly Tracking Right',
+    actionNotes: 'Glowing skyline grids pierce layers of atmospheric smog as heavy rain streaks across neon billboard arrays.',
+    dialogueLine: 'They said this city died when the grid went dark. They lied.',
   },
   {
     id: 'clip-2',
-    title: 'Scene 2: Mirror Gaze',
+    title: 'Scene 2: Visor Gaze',
     duration: 10,
     prompt: 'Intense tight close-up of a pilot wearing mercury visor goggles reflecting solar flare grids',
     styleId: 'cinematic-noir',
     imageSeed: 'noir',
     isGenerating: false,
     progress: 100,
+    shotType: 'Extreme Close Up [ECU]',
+    cameraAction: 'Symmetrical slow zoom',
+    actionNotes: 'Reflective silver visor frames show cascading code streams, highlighting detailed dust particles suspended in light.',
+    dialogueLine: 'I can see the signals... tracing light grids directly through my cortex.',
   },
   {
     id: 'clip-3',
@@ -49,6 +61,10 @@ const DEFAULT_CLIPS: SceneClip[] = [
     imageSeed: 'vintage',
     isGenerating: false,
     progress: 100,
+    shotType: 'Low Angle Crane [HA]',
+    cameraAction: 'Ascending vertical sweep',
+    actionNotes: 'The camera drifts slowly over massive starship wing structures. Warm sunshine particles dance in quiet air.',
+    dialogueLine: 'Here lies the century\'s gold... buried under cosmic dust and fading starlight.',
   },
 ];
 
@@ -58,6 +74,7 @@ export default function Home() {
   const [activeClipId, setActiveClipId] = useState<string | null>('clip-1');
   const [isPlaying, setIsPlaying] = useState<boolean>(false);
   const [playTime, setPlayTime] = useState<number>(0);
+  const [aspectRatio, setAspectRatio] = useState<string>('16:9');
   
   // Loading screen states
   const [showLoadingScreen, setShowLoadingScreen] = useState<boolean>(true); // SHOW INITIAL LOADER FOR 2 SECONDS FOR AI CALIBRATION
@@ -193,15 +210,24 @@ export default function Home() {
   const handleGenerateScene = (prompt: string, selectedMods: string[], styleId: string, duration: number) => {
     const newId = `clip-${Date.now()}`;
     const newSceneIndex = clips.length + 1;
+    
+    // Add realistic director descriptions even to single-shots
+    const randomCameraMove = ['Slow Dolly Zoom', 'Whip Pan Right', 'Symmetrical tracking zoom', 'Warm lens rack-focus'][Math.floor(Math.random() * 4)];
+    const randomShotScale = ['Medium Close Up [MCU]', 'Extreme Wide Shot [EWS]', 'High Angle Panoramic', 'Over Shoulder Shot [OTS]'][Math.floor(Math.random() * 4)];
+    const randomActionNote = 'The camera tracks slow cinematic layers of light and mist as shadows stretch across the canvas grid.';
+
     const newClip: SceneClip = {
       id: newId,
       title: `Scene ${newSceneIndex}: Gen Draft`,
       duration: duration,
       prompt: prompt || 'Abstract visual flow gradient motion',
       styleId: styleId,
-      imageSeed: Math.random().toString(36).substring(7),
+      imageSeed: Math.random().toString(36).substring(7).toUpperCase(),
       isGenerating: true,
       progress: 0,
+      shotType: randomShotScale,
+      cameraAction: randomCameraMove,
+      actionNotes: randomActionNote,
     };
 
     setClips((prev) => [...prev, newClip]);
@@ -228,6 +254,79 @@ export default function Home() {
         clearInterval(interval);
       }
     }, 800);
+  };
+
+  // Modern open-source super method: Generate a complete cohesive storyboard with Gemini
+  const handleGenerateStoryboardSeries = async (concept: string) => {
+    try {
+      const response = await fetch('/api/gemini/storyboard', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          action: 'generate_full',
+          concept,
+        }),
+      });
+
+      const data = await response.json();
+      if (!data.scenes || !Array.isArray(data.scenes)) {
+        throw new Error("Invalid response schema returned from structural API");
+      }
+
+      const generatedClips: SceneClip[] = data.scenes.map((sc: any, index: number) => {
+        const newId = `clip-${Date.now()}-${index}`;
+        return {
+          id: newId,
+          title: sc.title || `Scene ${clips.length + index + 1}: AI Gen`,
+          duration: sc.duration || 8,
+          prompt: sc.prompt,
+          styleId: sc.styleId,
+          imageSeed: Math.random().toString(36).substring(7).toUpperCase(),
+          isGenerating: true,
+          progress: 0,
+          shotType: sc.shotType,
+          cameraAction: sc.cameraAction,
+          actionNotes: sc.actionNotes,
+          dialogueLine: sc.dialogueLine,
+        };
+      });
+
+      // Append clips, focus on first new clip
+      setClips((prev) => [...prev, ...generatedClips]);
+      if (generatedClips.length > 0) {
+        setActiveClipId(generatedClips[0].id);
+        setPlayTime(0); // seek playhead to start of new storyboard
+      }
+
+      // Animate progress tracks individually for immersion and cinematic flow
+      generatedClips.forEach((element) => {
+        let currentPrg = 0;
+        const interval = setInterval(() => {
+          currentPrg += 25;
+          setClips((prev) =>
+            prev.map((c) => {
+              if (c.id === element.id) {
+                return {
+                  ...c,
+                  progress: currentPrg,
+                  isGenerating: currentPrg < 100,
+                };
+              }
+              return c;
+            })
+          );
+
+          if (currentPrg >= 100) {
+            clearInterval(interval);
+          }
+        }, 800 + Math.random() * 500);
+      });
+
+    } catch (err) {
+      console.error("AI Generation error:", err);
+    }
   };
 
   // Add dummy placeholder
@@ -347,13 +446,6 @@ export default function Home() {
               </span>
             </div>
           </div>
-
-          <div className="flex items-center gap-3">
-            <div className="hidden lg:flex items-center gap-1 text-[11px] text-neutral-400 font-mono">
-              <span className="w-2 h-2 bg-green-500 rounded-full shrink-0" />
-              PORT 3000 DEV ACTIVE
-            </div>
-          </div>
         </div>
 
         {/* Video Player & Generator Column Dual Grid */}
@@ -368,6 +460,8 @@ export default function Home() {
               playTime={playTime}
               totalDuration={totalDuration}
               onScrub={handleScrubTime}
+              aspectRatio={aspectRatio}
+              setAspectRatio={setAspectRatio}
             />
           </div>
 
@@ -375,6 +469,7 @@ export default function Home() {
           <div className="lg:col-span-5 flex flex-col h-full">
             <Generator
               onGenerateScene={handleGenerateScene}
+              onGenerateStoryboardSeries={handleGenerateStoryboardSeries}
               isGeneratingAny={!!generatingClip}
             />
           </div>
